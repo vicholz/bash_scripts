@@ -1,0 +1,44 @@
+#!/bin/bash
+
+LOG=/tmp/send2rollo-$(date +%y%m%d-%H%M).log
+
+function send_notification(){
+  osascript -e 'display notification "'"$1"'" with title "Send2Rollo"'
+}
+
+function popup_message(){
+  osascript -e 'tell app "System Events" to display dialog "'"$1"'"'
+}
+
+function do_lp(){
+  lp -o media=4x6 -d Rollo_X1040 ${1} | tee -a $LOG
+}
+
+if [ ! -f /usr/local/bin/pdfimages ]; then
+  echo "Please install pdfimages by running the following command:" | tee -a $LOG
+  echo "brew install poppler || apt install -y poppler || yum install -y poppler" | tee -a $LOG
+  popup_message "There was an error.\n'$(cat ${LOG})'."
+  exit 1
+fi
+
+if [ -z "$1" ]; then
+  popup_message "Send files to this app using the right-click \\\"Open with\\\" option." | tee -a $LOG
+  exit
+fi
+
+FEXT=$(echo ${1##*.} | tr '[:upper:]' '[:lower:]')
+if [[ "${FEXT}" == "png" ]] || [[ "${FEXT}" == "jpg" ]] || [[ "${FEXT}" == "gif" ]]; then
+  send_notification "Printing '${1}'..."
+  do_lp "${1}"
+  exit
+else
+  FN=$(echo ${1} | tr " " "_")
+  send_notification "Printing '${1}'..."
+  echo "Extracting images from '${1}'..." | tee -a $LOG
+  pdfimages -png "${1}" /tmp/${FN%%.*} | tee -a $LOG
+  echo "Extracting images from '${1}'...DONE!" | tee -a $LOG
+  echo "Sending images to printer..." | tee -a $LOG
+  do_lp /tmp/${FN%%.*}*
+  echo "Sending images to printer...DONE!" | tee -a $LOG
+  exit
+fi
