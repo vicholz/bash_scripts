@@ -26,7 +26,7 @@ MACS_GREP=$(echo ${MACS} | tr "," "|")
 ip=$(ifconfig | grep "inet " | grep -Fv 127.0.0.1 | grep -Fv "inet 100." | awk '{print $2}')
 ip_sub=${ip%.*}
 echo -n "Pinging ${ip_sub}.* to build arp tables..."
-echo ${ip_sub}.{1..254}|xargs -n1 -P0 ping -c 3 -t 3 > /dev/null 2>&1
+echo ${ip_sub}.{1..254}|xargs -n1 -P0 ping -c 1 -t 1 > /dev/null 2>&1
 echo "DONE!"
 echo "Looking for IP's matching '${MACS}'..."
 arp -na | grep -E -i "${MACS_GREP}"
