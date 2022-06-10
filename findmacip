@@ -1,0 +1,32 @@
+#!/bin/bash
+
+PI_MACS="b8:27:eb,dc:a6:32"
+
+function usage () {
+    echo "Find IP's based on MAC address on local network."
+    echo "USAGE: $(basename ${0}) COMMA_SEPARATED_LIST_OF_MAC_PREFIXES"
+}
+
+if [[ "${1}" == "-h" ]] || [[ "${1}" == "--help" ]]; then
+    usage
+    exit 0
+fi
+
+if [ -z "${1}" ]; then
+    echo "No MAC address specified!"
+    exit 1
+fi
+
+if [ "${1}" == "pi" ]; then
+    MACS="${PI_MACS}"
+else
+    MACS=$(echo "${1}" | tr -d " ")
+fi
+MACS_GREP=$(echo ${MACS} | tr "," "|")
+ip=$(ifconfig | grep "inet " | grep -Fv 127.0.0.1 | grep -Fv "inet 100." | awk '{print $2}')
+ip_sub=${ip%.*}
+echo -n "Pinging ${ip_sub}.* to build arp tables..."
+echo ${ip_sub}.{1..254}|xargs -n1 -P0 ping -c 3 -t 3 > /dev/null 2>&1
+echo "DONE!"
+echo "Looking for IP's matching '${MACS}'..."
+arp -na | grep -E -i "${MACS_GREP}"
